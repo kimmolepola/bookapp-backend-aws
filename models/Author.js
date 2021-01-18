@@ -13,8 +13,9 @@ const schema = new mongoose.Schema({
   bookCount: {
     type: Number,
     required: true,
-  }
+  },
 });
 
-module.exports = mongoose.model('Author', schema)
-;
+// module.exports = mongoose.model('Author', schema);
+
+module.exports = schema;
