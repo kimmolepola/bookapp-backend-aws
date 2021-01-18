@@ -7,6 +7,7 @@ const jwt = require('jsonwebtoken');
 const UserSchema = require('./models/User');
 const AuthorSchema = require('./models/Author');
 const BookSchema = require('./models/Book');
+const typeDefs = require('./typeDefs');
 
 const { JWT_SECRET } = process.env;
 
@@ -30,33 +31,6 @@ const initConnection = async () => {
   return conn;
 };
 
-/*
-exports.graphqlHandler = server.createHandler({
-  cors: {
-    origin: true,
-    credentials: true,
-  },
-});
-*/
-
-/*
-const connect = initConnection(); // initConnection() will return a promise
-
-const graphQLHandler = server.createHandler({
-  cors: {
-    origin: '*',
-    credentials: true,
-  },
-});
-
-exports.handler = (event, context, callback) => {
-  context.callbackWaitsForEmptyEventLoop = false; // eslint-disable-line no-param-reassign
-
-  // initConnection will run only once and after that the promise is fulfilled
-  connect.then((connection) => graphQLHandler(event, context, callback));
-};
-*/
-
 exports.graphqlHandler = (event, context, callback) => {
   context.callbackWaitsForEmptyEventLoop = false; // eslint-disable-line no-param-reassign
   //  warmup plugin early return
@@ -69,85 +43,11 @@ exports.graphqlHandler = (event, context, callback) => {
   } else {
     initConnection().then((connection) => {
       console.log('connected to mongoDB, creating handler'); // eslint-disable-line no-console
-      console.log(connection); // eslint-disable-line no-console
 
 
       const Author = connection.model('Author', AuthorSchema);
       const Book = connection.model('Book', BookSchema);
       const User = connection.model('User', UserSchema);
-
-      // Construct a schema, using GraphQL schema language
-      /*
-const typeDefs = gql`
-  type Query {
-    hello: String
-  }
-`;
-*/
-
-      const typeDefs = gql`
-  type Author {
-    name: String!
-    id: ID
-    born: Int
-    bookCount: Int
-  }
-  type Book {
-    title: String!
-    published: Int!
-    author: Author!
-    genres: [String!]
-    id: ID!
-  }
-  type User {
-    username: String!
-    favoriteGenre: String!
-    id: ID!
-  }
-  type Token {
-    value: String!
-  }
-  type Subscription {
-    bookAdded: Book!
-  }
-  type Mutation {
-    createUser(
-      username: String!
-      favoriteGenre: String!
-    ): User
-    login(
-      username: String!
-      password: String!
-    ): Token
-    editAuthor(
-      name: String!
-      setBornTo: Int!
-    ): Author
-    addBook(
-      title: String!
-      author: String
-      published: Int
-      genres: [String!]
-    ): Book
-  }
-  type Query {
-    allGenres: [String!]!
-    me: User
-    allAuthors: [Author!]!
-    allBooks(author: String, genre: String): [Book!]!
-    authorCount: Int!
-    bookCount: Int!
-  }
-  `;
-
-      // Provide resolver functions for your schema fields
-      /*
-const resolvers = {
-  Query: {
-    hello: () => 'Hello world!',
-  },
-};
-*/
 
       const resolvers = {
         Mutation: {
@@ -205,18 +105,10 @@ const resolvers = {
             }
             authorObj.bookCount += 1;
             authorObj.save();
-            // pubsub.publish('BOOK_ADDED', { bookAdded: book });
+
             return book;
           },
         },
-
-        /*
-  Subscription: {
-    bookAdded: {
-      subscribe: () => pubsub.asyncIterator(['BOOK_ADDED']),
-    },
-  },
-  */
 
         Query: {
           allGenres: async () => Object.keys((await Book.find({})).reduce((acc, cur) => {
@@ -239,8 +131,9 @@ const resolvers = {
         playground: {
           endpoint: '/dev/graphql',
         },
-        context: async ({ request }) => { // eslint-disable-line consistent-return
-          const auth = request ? request.headers.authorization : null;
+        context: async () => { // eslint-disable-line consistent-return
+          // const auth = request ? request.headers.authorization : null;
+          const auth = event ? event.headers ? event.headers.Authorization : null : null; // eslint-disable-line no-nested-ternary, max-len
           if (auth && auth.toLowerCase().startsWith('bearer ')) {
             const decodedToken = jwt.verify(
               auth.substring(7), JWT_SECRET,
@@ -254,7 +147,7 @@ const resolvers = {
 
       server.createHandler({
         cors: {
-          origin: '*',
+          origin: true,
           credentials: true,
         },
       })(event, context, callback);
