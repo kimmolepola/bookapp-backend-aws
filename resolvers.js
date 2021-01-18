@@ -1,7 +1,30 @@
+const {
+  UserInputError, AuthenticationError,
+} = require('apollo-server-lambda');
+const UserSchema = require('./models/User');
+const AuthorSchema = require('./models/Author');
+const BookSchema = require('./models/Book');
+
 const createResolvers = ({
-  User, UserInputError, JWT_SECRET, AuthenticationError, Author, Book, jwt,
+  connection, jwt, JWT_SECRET, event,
 }) => {
-  const rslvrs = {
+  const Author = connection.model('Author', AuthorSchema);
+  const Book = connection.model('Book', BookSchema);
+  const User = connection.model('User', UserSchema);
+
+  const context = async () => { // eslint-disable-line consistent-return
+    // const auth = request ? request.headers.authorization : null;
+    const auth = event ? event.headers ? event.headers.Authorization : null : null; // eslint-disable-line no-nested-ternary, max-len
+    if (auth && auth.toLowerCase().startsWith('bearer ')) {
+      const decodedToken = jwt.verify(
+        auth.substring(7), JWT_SECRET,
+      );
+      const currentUser = await User.findById(decodedToken.id);
+      return { currentUser };
+    }
+  };
+
+  const resolvers = {
     Mutation: {
       createUser: (root, args) => {
         const user = new User({ username: args.username, favoriteGenre: args.favoriteGenre });
@@ -77,7 +100,7 @@ const createResolvers = ({
     },
   };
 
-  return rslvrs;
+  return { resolvers, context };
 };
 
 module.exports = createResolvers;
