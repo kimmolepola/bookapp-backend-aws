@@ -1,11 +1,11 @@
 {
-  "name": "bookapp-backend-azure",
+  "name": "bookapp-backend-aws",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "func start"
+    "start": "node graphql.js"
   },
   "author": "",
   "license": "ISC",
