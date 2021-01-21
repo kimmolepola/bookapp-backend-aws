@@ -51,7 +51,7 @@ exports.graphqlHandler = (event, context, callback) => {
         typeDefs,
         resolvers: rslvrs.resolvers,
         playground: {
-          endpoint: '/dev/graphql',
+          endpoint: '/prod/graphql',
         },
         context: rslvrs.context,
       });
